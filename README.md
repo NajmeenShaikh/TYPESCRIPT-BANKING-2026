@@ -1,25 +1,26 @@
 # TypeScript Banking Domain Engineering
 
-Production-oriented TypeScript practice for React frontend and BFSI / FinTech applications.
+Strict TypeScript business-domain practice for React frontend and BFSI / FinTech applications.
 
-This repository focuses on using TypeScript to make banking business rules, API contracts, financial calculations, and application state safer and easier to maintain.
+This repository demonstrates how I use TypeScript to model banking entities, API contracts, financial calculations, service-layer results, and explicit success/failure states.
 
-## 🎯 What This Project Demonstrates
+> **Portfolio role:** TypeScript/domain-engineering project supporting my React banking applications.
 
-- Strong typing for banking domain entities
-- Interfaces and type aliases
-- Union and literal types
-- Optional and readonly properties
-- Generic API response types
-- Discriminated unions
-- Type guards and type narrowing
+## 🎯 What This Demonstrates
+
+- Strict TypeScript compiler safety
+- Banking domain modeling with interfaces and literal unions
+- Discriminated unions for predictable success/error handling
+- Type guards and exhaustive `switch` handling
+- Generic API response contracts
 - Utility types and reusable type helpers
-- Type-safe error modeling
-- Financial/EMI calculations
-- Service-layer contracts
-- Production-oriented TypeScript patterns
+- Financial/EMI business calculations
+- Typed service-layer boundaries
+- Defensive validation of untrusted inputs
+- Unit testing with Node's built-in test runner
+- ESM module structure compatible with modern TypeScript projects
 
-## 🏦 Banking Domain Model
+## 🏦 Domain Model
 
 ```text
 Customer
@@ -28,12 +29,20 @@ Bank Account
    ↓
 Transaction
    ↓
-Payment / Transfer
+Transfer Service
    ↓
-Loan / EMI
+Typed Result<T>
+   ↓
+React UI / API Client
+
+Loan
+   ↓
+EMI Calculation
+   ↓
+Financial UI
 ```
 
-The domain models intentionally represent realistic frontend concerns such as account status, transaction status, currency, KYC state, transfer requests, and API errors.
+Core domain types model account status, transaction lifecycle, currency, KYC state, transfer requests, and API errors. fileciteturn186file0
 
 ## 📁 Architecture
 
@@ -41,55 +50,36 @@ The domain models intentionally represent realistic frontend concerns such as ac
 src/
 ├── domain/
 │   ├── banking.ts
-│   └── loan.ts
+│   ├── banking.test.ts
+│   ├── loan.ts
+│   └── loan.test.ts
 ├── exercises/
 │   └── typeNarrowing.ts
 ├── services/
-│   └── transferService.ts
+│   ├── transferService.ts
+│   └── transferService.test.ts
 ├── utils/
 │   └── typeUtils.ts
 └── index.ts
 ```
 
-- `domain/` contains business entities and rules.
-- `services/` isolates application/API behavior.
-- `utils/` contains reusable type-safe helpers.
-- `exercises/` demonstrates advanced language features through business examples.
-- `index.ts` provides a clean module boundary.
+- `domain/` — business entities, states, and financial rules.
+- `services/` — application/service contracts and typed results.
+- `utils/` — reusable TypeScript helpers.
+- `exercises/` — focused examples of narrowing and exhaustive handling.
+- Tests sit beside the business modules they protect.
 
-## 🧠 Core TypeScript Patterns
+## 🧠 Key TypeScript Patterns
 
-### Union types
+### 1. Literal unions
 
 ```ts
 type TransactionStatus = "PENDING" | "SUCCESS" | "FAILED";
 ```
 
-Prevents invalid transaction states from entering the application.
+The compiler prevents unsupported transaction states from being passed around.
 
-### Readonly domain identifiers
-
-```ts
-interface BankAccount {
-  readonly accountId: string;
-}
-```
-
-Account identity should not accidentally change after creation.
-
-### Generic API responses
-
-```ts
-interface ApiResponse<T> {
-  data: T;
-  success: boolean;
-  message?: string;
-}
-```
-
-The same response contract can safely represent accounts, transactions, loans, or other resources.
-
-### Discriminated unions
+### 2. Discriminated result
 
 ```ts
 type Result<T> =
@@ -97,40 +87,69 @@ type Result<T> =
   | { ok: false; error: ApiError };
 ```
 
-This makes success and failure paths explicit and helps TypeScript prevent unsafe property access.
+Consumers must handle success and failure explicitly instead of relying on nullable data or exceptions for expected business errors.
 
-### Type guards
-
-The project includes a type guard that narrows successful transactions to `status: "SUCCESS"`.
-
-### Utility types
-
-Reusable helpers demonstrate patterns based on `Partial`, `Required`, `Pick`, `Record`, nullable values, and async-state modeling.
-
-## 💳 Type-Safe Transfer Example
-
-The transfer service accepts a strongly typed request:
+### 3. Type guards
 
 ```ts
-interface TransferRequest {
-  fromAccountId: string;
-  toAccountId: string;
-  amount: number;
-  remarks?: string;
+function isSuccessfulTransaction(transaction: Transaction) {
+  return transaction.status === "SUCCESS";
 }
 ```
 
-The service returns a typed `Result<TransferReceipt>` so success and failure are explicit at the application boundary.
+The guard narrows the transaction status at compile time.
+
+### 4. Exhaustive handling
+
+`assertNever()` is used with transaction-status switches so adding a new status can surface a compile-time failure instead of silently creating an incomplete branch.
+
+### 5. Strict compiler configuration
+
+The project enables strict checking plus additional safety options such as `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, and exhaustive switch protections.
+
+## 💳 Typed Transfer Service
+
+The service accepts a `TransferRequest` and returns `Promise<Result<TransferReceipt>>`. It validates:
+
+- source and destination account IDs
+- same-account transfers
+- finite positive amounts
+- successful vs failed result paths
+
+The service also generates unique transaction identifiers for the portfolio simulation. In a real banking system, authorization, idempotency, balance checks, fraud controls, and transaction uniqueness must be enforced by the backend as well.
 
 ## 🏠 Loan & EMI Domain
 
-The project models loans and provides a monthly EMI calculation function, including the zero-interest edge case.
+The project includes a reducing-balance EMI calculation with validation for principal, interest rate, and tenure, including a zero-interest case.
 
 ```text
 EMI = P × r × (1 + r)^n / ((1 + r)^n − 1)
 ```
 
-Where `P` is principal, `r` is the monthly interest rate, and `n` is the number of monthly instalments.
+Where `P` is principal, `r` is the monthly interest rate, and `n` is the number of instalments.
+
+## 🧪 Testing Strategy
+
+Business-rule tests cover:
+
+- successful transaction narrowing
+- pending transaction handling
+- standard EMI calculation
+- zero-interest EMI
+- invalid financial inputs
+- successful transfer receipt creation
+- invalid transfer amounts
+- same-account transfers
+- missing account identifiers
+
+Run locally with:
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run build
+```
 
 ## ⚛️ React + TypeScript Mapping
 
@@ -141,54 +160,33 @@ Custom Hook
       ↓
 Typed Service
       ↓
-Typed API Response
+Result<T> / ApiResponse<T>
       ↓
 Banking Domain Model
 ```
 
-These types are designed to be consumed by React applications and typed REST clients.
+The types are intentionally reusable from React applications such as a banking dashboard, transfer workflow, or loan/EMI UI.
 
-## 🧪 Testing Strategy
+## 🔐 Engineering & Security Boundary
 
-The intended business-rule coverage includes:
+This is a learning and portfolio repository. It does not process real money or store real customer information.
 
-- valid transfer
-- invalid transfer amount
-- zero-interest EMI
-- normal-interest EMI
-- transaction status narrowing
-- API success response
-- API error response
-- account status rules
+TypeScript improves compile-time correctness, but it is **not a security boundary**. Production banking applications still require server-side authorization, authentication/session controls, input validation, audit logging, rate limiting, fraud controls, secure transport, and server-enforced idempotency.
 
-Recommended React integration tooling: **Vitest + React Testing Library**.
+## 🚀 Roadmap
 
-## 🚀 Getting Started
-
-```bash
-npm install
-npm run build
-```
-
-## 💡 Engineering Principles
-
-- Prefer explicit domain types over `any`.
-- Model business states explicitly.
-- Keep API concerns separate from React components.
-- Make validation and failure states first-class.
-- Optimize types for maintainability and refactoring safety.
-
-## 🔮 Roadmap
-
-- [ ] Add full Vitest unit tests
-- [ ] Add React + TypeScript examples
-- [ ] Add typed Fetch API client
-- [ ] Add runtime validation with Zod at API boundaries
-- [ ] Add pagination/filter/sort API contracts
-- [ ] Add authentication/session types
-- [ ] Add typed beneficiary and card domains
-- [ ] Add CI workflow for typecheck + test + build
-- [ ] Integrate selected models into `react-bank-dashboard`
+- [x] Strict TypeScript domain model
+- [x] Typed transfer service
+- [x] EMI business calculation
+- [x] Discriminated result/error model
+- [x] Type guards and exhaustive handling
+- [x] Business-rule unit tests
+- [ ] Typed Fetch API client
+- [ ] Runtime API validation at network boundaries
+- [ ] Pagination/filter/sort contracts
+- [ ] Beneficiary/card domains
+- [ ] React integration examples
+- [ ] CI workflow verification
 
 ## 👩‍💻 Author
 
