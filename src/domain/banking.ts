@@ -46,12 +46,12 @@ export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: ApiError };
 
-export type TransferRequest = {
+export interface TransferRequest {
   fromAccountId: string;
   toAccountId: string;
   amount: number;
   remarks?: string;
-};
+}
 
 export function isSuccessfulTransaction(
   transaction: Transaction,
