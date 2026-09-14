@@ -1,15 +1,15 @@
 {
-  "name": "typescript2026",
+  "name": "typescript-banking-2026",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Strict TypeScript banking domain modeling and business-rule examples for React/BFSI applications.",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "lint": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
     "typescript": "^6.0.3"
   }
