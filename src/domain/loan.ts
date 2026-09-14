@@ -1,6 +1,6 @@
 export interface Loan {
   readonly loanId: string;
-  customerId: string;
+  readonly customerId: string;
   principal: number;
   annualInterestRate: number;
   tenureMonths: number;
@@ -8,11 +8,11 @@ export interface Loan {
 }
 
 export interface EmiBreakdown {
-  month: number;
-  openingPrincipal: number;
-  interest: number;
-  principal: number;
-  closingPrincipal: number;
+  readonly month: number;
+  readonly openingPrincipal: number;
+  readonly interest: number;
+  readonly principal: number;
+  readonly closingPrincipal: number;
 }
 
 export function calculateMonthlyEmi(
@@ -20,7 +20,17 @@ export function calculateMonthlyEmi(
   annualInterestRate: number,
   tenureMonths: number,
 ): number {
-  if (principal <= 0 || tenureMonths <= 0) return 0;
+  if (
+    !Number.isFinite(principal) ||
+    !Number.isFinite(annualInterestRate) ||
+    !Number.isInteger(tenureMonths) ||
+    principal <= 0 ||
+    annualInterestRate < 0 ||
+    tenureMonths <= 0
+  ) {
+    return 0;
+  }
+
   if (annualInterestRate === 0) return principal / tenureMonths;
 
   const monthlyRate = annualInterestRate / 12 / 100;
