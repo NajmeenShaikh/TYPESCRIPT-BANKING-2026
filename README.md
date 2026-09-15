@@ -1,16 +1,16 @@
 # TypeScript Banking Domain Engineering
 
-Strict TypeScript business-domain practice for React frontend and BFSI / FinTech applications.
+Strict TypeScript business-domain engineering for **React frontend and BFSI / FinTech applications**.
 
-This repository demonstrates how I use TypeScript to model banking entities, API contracts, financial calculations, service-layer results, and explicit success/failure states.
+This repository demonstrates how I model banking entities, API contracts, financial calculations, service results and explicit success/failure states with TypeScript.
 
 > **Portfolio role:** TypeScript/domain-engineering project supporting my React banking applications.
 
 ## 🎯 What This Demonstrates
 
 - Strict TypeScript compiler safety
-- Banking domain modeling with interfaces and literal unions
-- Discriminated unions for predictable success/error handling
+- Banking domain models with interfaces and literal unions
+- Discriminated unions for explicit success/error handling
 - Type guards and exhaustive `switch` handling
 - Generic API response contracts
 - Utility types and reusable type helpers
@@ -18,7 +18,6 @@ This repository demonstrates how I use TypeScript to model banking entities, API
 - Typed service-layer boundaries
 - Defensive validation of untrusted inputs
 - Unit testing with Node's built-in test runner
-- ESM module structure compatible with modern TypeScript projects
 
 ## 🏦 Domain Model
 
@@ -31,7 +30,7 @@ Transaction
    ↓
 Transfer Service
    ↓
-Typed Result<T>
+Result<T>
    ↓
 React UI / API Client
 
@@ -42,8 +41,6 @@ EMI Calculation
 Financial UI
 ```
 
-Core domain types model account status, transaction lifecycle, currency, KYC state, transfer requests, and API errors. fileciteturn186file0
-
 ## 📁 Architecture
 
 ```text
@@ -53,33 +50,27 @@ src/
 │   ├── banking.test.ts
 │   ├── loan.ts
 │   └── loan.test.ts
-├── exercises/
-│   └── typeNarrowing.ts
 ├── services/
 │   ├── transferService.ts
 │   └── transferService.test.ts
 ├── utils/
 │   └── typeUtils.ts
+├── exercises/
+│   └── typeNarrowing.ts
 └── index.ts
 ```
 
-- `domain/` — business entities, states, and financial rules.
-- `services/` — application/service contracts and typed results.
-- `utils/` — reusable TypeScript helpers.
-- `exercises/` — focused examples of narrowing and exhaustive handling.
-- Tests sit beside the business modules they protect.
+`domain/` contains business entities and financial rules. `services/` contains typed application contracts. `utils/` contains reusable helpers. The focused `exercises/` directory contains isolated narrowing/exhaustiveness examples.
 
 ## 🧠 Key TypeScript Patterns
 
-### 1. Literal unions
+### Literal unions
 
 ```ts
 type TransactionStatus = "PENDING" | "SUCCESS" | "FAILED";
 ```
 
-The compiler prevents unsupported transaction states from being passed around.
-
-### 2. Discriminated result
+### Discriminated results
 
 ```ts
 type Result<T> =
@@ -87,62 +78,40 @@ type Result<T> =
   | { ok: false; error: ApiError };
 ```
 
-Consumers must handle success and failure explicitly instead of relying on nullable data or exceptions for expected business errors.
+Expected business failures are represented explicitly instead of relying on nullable values or exceptions for every branch.
 
-### 3. Type guards
+### Type guards and exhaustive handling
 
-```ts
-function isSuccessfulTransaction(transaction: Transaction) {
-  return transaction.status === "SUCCESS";
-}
-```
+Type guards narrow domain states, while `assertNever()` makes incomplete status handling visible during compilation when a new state is introduced.
 
-The guard narrows the transaction status at compile time.
+### Strict compiler configuration
 
-### 4. Exhaustive handling
-
-`assertNever()` is used with transaction-status switches so adding a new status can surface a compile-time failure instead of silently creating an incomplete branch.
-
-### 5. Strict compiler configuration
-
-The project enables strict checking plus additional safety options such as `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, and exhaustive switch protections.
+The project uses strict checking with additional safety options such as `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride`.
 
 ## 💳 Typed Transfer Service
 
-The service accepts a `TransferRequest` and returns `Promise<Result<TransferReceipt>>`. It validates:
+The transfer service accepts a `TransferRequest` and returns `Promise<Result<TransferReceipt>>`. It validates source/destination account IDs, same-account transfers and finite positive amounts, with explicit success and failure paths.
 
-- source and destination account IDs
-- same-account transfers
-- finite positive amounts
-- successful vs failed result paths
-
-The service also generates unique transaction identifiers for the portfolio simulation. In a real banking system, authorization, idempotency, balance checks, fraud controls, and transaction uniqueness must be enforced by the backend as well.
+In a real banking system, authorization, balance checks, fraud controls, idempotency and transaction uniqueness must be enforced by trusted backend services.
 
 ## 🏠 Loan & EMI Domain
 
-The project includes a reducing-balance EMI calculation with validation for principal, interest rate, and tenure, including a zero-interest case.
-
-```text
-EMI = P × r × (1 + r)^n / ((1 + r)^n − 1)
-```
-
-Where `P` is principal, `r` is the monthly interest rate, and `n` is the number of instalments.
+The project includes a reducing-balance EMI calculation with validation for principal, interest rate and tenure, including a zero-interest case.
 
 ## 🧪 Testing Strategy
 
 Business-rule tests cover:
 
-- successful transaction narrowing
-- pending transaction handling
-- standard EMI calculation
-- zero-interest EMI
-- invalid financial inputs
-- successful transfer receipt creation
-- invalid transfer amounts
-- same-account transfers
-- missing account identifiers
+- Transaction-state narrowing
+- Pending/success/failure handling
+- Standard and zero-interest EMI
+- Invalid financial inputs
+- Successful transfer receipt creation
+- Invalid transfer amounts
+- Same-account transfers
+- Missing account identifiers
 
-Run locally with:
+Run locally:
 
 ```bash
 npm install
@@ -165,31 +134,12 @@ Result<T> / ApiResponse<T>
 Banking Domain Model
 ```
 
-The types are intentionally reusable from React applications such as a banking dashboard, transfer workflow, or loan/EMI UI.
+The types are designed to be reusable from React applications such as a banking dashboard, transfer workflow or loan/EMI UI.
 
-## 🔐 Engineering & Security Boundary
+## 🔐 Engineering Boundary
 
-This is a learning and portfolio repository. It does not process real money or store real customer information.
-
-TypeScript improves compile-time correctness, but it is **not a security boundary**. Production banking applications still require server-side authorization, authentication/session controls, input validation, audit logging, rate limiting, fraud controls, secure transport, and server-enforced idempotency.
-
-## 🚀 Roadmap
-
-- [x] Strict TypeScript domain model
-- [x] Typed transfer service
-- [x] EMI business calculation
-- [x] Discriminated result/error model
-- [x] Type guards and exhaustive handling
-- [x] Business-rule unit tests
-- [ ] Typed Fetch API client
-- [ ] Runtime API validation at network boundaries
-- [ ] Pagination/filter/sort contracts
-- [ ] Beneficiary/card domains
-- [ ] React integration examples
-- [ ] CI workflow verification
+This is a portfolio repository and does not process real money or store real customer information. TypeScript improves compile-time correctness; it is not a security boundary. Production banking applications still require server-side authorization, authentication, validation, audit logging, rate limiting, fraud controls and server-enforced idempotency.
 
 ## 👩‍💻 Author
 
-**Najmeen Shaikh** — React UI Frontend Developer focused on React, TypeScript, JavaScript, REST APIs, and BFSI / FinTech applications.
-
-GitHub: https://github.com/NajmeenShaikh
+**Najmeen Shaikh** — React UI Frontend Developer focused on React, TypeScript, JavaScript, REST APIs and BFSI / FinTech applications.
